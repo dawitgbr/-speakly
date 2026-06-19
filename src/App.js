@@ -1,33 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
-// ===== HOOK: useViewport =====
-function useViewport() {
-  const [viewport, setViewport] = useState({
-    isMobile: false,
-    isTiny: false,
-    width: typeof window !== 'undefined' ? window.innerWidth : 1024,
-  });
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    const handleResize = () => {
-      const width = window.innerWidth;
-      setViewport({
-        width,
-        isMobile: width < 640,
-        isTiny: width < 380,
-      });
-    };
-
-    handleResize();
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  return viewport;
-}
-
 const AudioEngine = {
   ctx: null,
   getCtx() {
@@ -182,12 +154,11 @@ function getExercise(ageId, typeId, index) {
   return pool[index % pool.length];
 }
 
-function WordPractice({ words, ag, muted, viewport }) {
+function WordPractice({ words, ag, muted }) {
   const [activeWord, setActiveWord] = useState(null);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const timerRef = useRef(null);
-  const { isMobile, isTiny } = viewport;
 
   const speakWord = useCallback((word, rate = 0.85) => {
     if (muted) return;
@@ -212,99 +183,45 @@ function WordPractice({ words, ag, muted, viewport }) {
   const handleNormal = () => { if (!activeWord) return; AudioEngine.click(); speakWord(activeWord, 0.85); };
 
   return (
-    <div style={{ marginBottom: isMobile ? 16 : 20 }}>
-      <div style={{ fontSize: isMobile ? 11 : 12, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: isMobile ? 8 : 10 }}>🔤 Tap a word to hear it</div>
-      <div style={{ display: "flex", flexWrap: "wrap", gap: isMobile ? 6 : 10, marginBottom: isMobile ? 12 : 16 }}>
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: "#6B7280", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>🔤 Tap a word to hear it</div>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 16 }}>
         {words.map((word, i) => (
-          <button key={i} onClick={() => handleWordTap(word)} style={{ 
-            background: activeWord === word ? ag.color : "#fff", 
-            color: activeWord === word ? "#fff" : "#1F2937", 
-            border: `2px solid ${activeWord === word ? ag.color : ag.color + "40"}`, 
-            borderRadius: isMobile ? 10 : 14, 
-            padding: isMobile ? "8px 12px" : "10px 18px", 
-            fontSize: isTiny ? 13 : (isMobile ? 14 : 17), 
-            fontWeight: 800, 
-            cursor: "pointer", 
-            fontFamily: "inherit", 
-            transition: "all 0.18s", 
-            boxShadow: activeWord === word ? `0 4px 14px ${ag.color}50` : "none", 
-            transform: activeWord === word ? "scale(1.05)" : "scale(1)",
-            flex: isTiny ? "1 0 calc(50% - 6px)" : "0 1 auto",
-            minWidth: isTiny ? "auto" : "50px",
-            textAlign: "center",
-            touchAction: "manipulation"
-          }}>
+          <button key={i} onClick={() => handleWordTap(word)} style={{ background: activeWord === word ? ag.color : "#fff", color: activeWord === word ? "#fff" : "#1F2937", border: `2px solid ${activeWord === word ? ag.color : ag.color + "40"}`, borderRadius: 14, padding: "10px 18px", fontSize: 17, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", transition: "all 0.18s", boxShadow: activeWord === word ? `0 4px 14px ${ag.color}50` : "none", transform: activeWord === word ? "scale(1.05)" : "scale(1)" }}>
             {word}
           </button>
         ))}
       </div>
       {activeWord && (
-        <div style={{ background: ag.light, borderRadius: isMobile ? 16 : 20, padding: isMobile ? "16px 12px" : "24px", textAlign: "center", marginBottom: isMobile ? 10 : 14 }}>
-          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: isMobile ? 1 : 2, marginBottom: isMobile ? 12 : 16 }}>
+        <div style={{ background: ag.light, borderRadius: 20, padding: "24px", textAlign: "center", marginBottom: 14 }}>
+          <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 2, marginBottom: 16 }}>
             {activeWord.split("").map((letter, i) => (
-              <span key={i} style={{ 
-                fontSize: isTiny ? 28 : (isMobile ? 34 : 42), 
-                fontWeight: 900, 
-                lineHeight: 1.2, 
-                color: highlightIndex === i ? ag.color : "#1F2937", 
-                background: highlightIndex === i ? ag.color + "20" : "transparent", 
-                borderRadius: 8, 
-                padding: isMobile ? "0 2px" : "0 3px", 
-                transition: "all 0.15s", 
-                display: "inline-block", 
-                transform: highlightIndex === i ? "scale(1.3)" : "scale(1)" 
-              }}>
+              <span key={i} style={{ fontSize: 42, fontWeight: 900, lineHeight: 1, color: highlightIndex === i ? ag.color : "#1F2937", background: highlightIndex === i ? ag.color + "20" : "transparent", borderRadius: 8, padding: "0 3px", transition: "all 0.15s", display: "inline-block", transform: highlightIndex === i ? "scale(1.3)" : "scale(1)" }}>
                 {letter}
               </span>
             ))}
           </div>
-          <div style={{ fontSize: isMobile ? 12 : 13, color: ag.color, fontWeight: 700, marginBottom: isMobile ? 12 : 16, letterSpacing: "0.05em" }}>{activeWord.toUpperCase()}</div>
-          <div style={{ display: "flex", gap: isMobile ? 6 : 10, justifyContent: "center", flexWrap: "wrap" }}>
-            <button onClick={handleNormal} style={{ 
-              background: ag.color, 
-              color: "#fff", 
-              border: "none", 
-              borderRadius: isMobile ? 10 : 12, 
-              padding: isMobile ? "10px 14px" : "10px 20px", 
-              fontSize: isMobile ? 13 : 14, 
-              fontWeight: 800, 
-              cursor: "pointer", 
-              opacity: isPlaying ? 0.7 : 1,
-              flex: isTiny ? "1" : "0 1 auto",
-              minWidth: isTiny ? "80px" : "auto",
-              touchAction: "manipulation"
-            }}>
+          <div style={{ fontSize: 13, color: ag.color, fontWeight: 700, marginBottom: 16, letterSpacing: "0.05em" }}>{activeWord.toUpperCase()}</div>
+          <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+            <button onClick={handleNormal} style={{ background: ag.color, color: "#fff", border: "none", borderRadius: 12, padding: "10px 20px", fontSize: 14, fontWeight: 800, cursor: "pointer", opacity: isPlaying ? 0.7 : 1 }}>
               {isPlaying ? "🔊 Playing..." : "🔊 Hear it"}
             </button>
-            <button onClick={handleSlow} style={{ 
-              background: "#fff", 
-              color: ag.color, 
-              border: `2px solid ${ag.color}`, 
-              borderRadius: isMobile ? 10 : 12, 
-              padding: isMobile ? "10px 14px" : "10px 20px", 
-              fontSize: isMobile ? 13 : 14, 
-              fontWeight: 800, 
-              cursor: "pointer",
-              flex: isTiny ? "1" : "0 1 auto",
-              minWidth: isTiny ? "80px" : "auto",
-              touchAction: "manipulation"
-            }}>🐢 Slow</button>
+            <button onClick={handleSlow} style={{ background: "#fff", color: ag.color, border: `2px solid ${ag.color}`, borderRadius: 12, padding: "10px 20px", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>🐢 Slow</button>
           </div>
-          <div style={{ marginTop: isMobile ? 10 : 14, fontSize: isMobile ? 12 : 13, color: "#6B7280", fontWeight: 600 }}>Now say it yourself — listen, then speak!</div>
+          <div style={{ marginTop: 14, fontSize: 13, color: "#6B7280", fontWeight: 600 }}>Now say it yourself — listen, then speak!</div>
         </div>
       )}
     </div>
   );
 }
 
-function ExerciseCard({ exercise, ageGroup, onNext, viewport }) {
+function ExerciseCard({ exercise, ageGroup, onNext }) {
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const [muted, setMuted] = useState(false);
   const ag = AGE_GROUPS.find(a => a.id === ageGroup);
   const steps = exercise.steps || [];
   const isLast = step >= steps.length - 1;
-  const { isMobile, isTiny } = viewport;
 
   const speak = useCallback((text, rate, onEnd) => {
     if (!muted) Speech.speak(text, rate || ag.speechRate, ag.speechPitch, onEnd);
@@ -318,46 +235,46 @@ function ExerciseCard({ exercise, ageGroup, onNext, viewport }) {
   const handleNext = () => { AudioEngine.step(); isLast ? setDone(true) : setStep(s => s + 1); };
 
   if (done) return (
-    <div style={{ textAlign: "center", padding: isMobile ? "16px 8px" : "32px 20px" }}>
-      <div style={{ fontSize: isMobile ? 48 : 72, marginBottom: isMobile ? 10 : 12 }}>🎉</div>
-      <div style={{ fontSize: isTiny ? 18 : (isMobile ? 20 : 24), fontWeight: 900, color: ag.color, marginBottom: isMobile ? 8 : 10 }}>{exercise.praise}</div>
-      <div style={{ fontSize: isMobile ? 13 : 14, color: "#6B7280", marginBottom: isMobile ? 16 : 24, lineHeight: 1.6 }}>{exercise.hint}</div>
-      <button onClick={() => { if (!muted) Speech.speak(exercise.praise, ag.speechRate, ag.speechPitch); }} style={{ background: ag.light, border: "none", borderRadius: 12, padding: isMobile ? "8px 16px" : "10px 20px", fontSize: isMobile ? 12 : 13, fontWeight: 700, color: ag.color, cursor: "pointer", marginBottom: isMobile ? 10 : 12, width: "100%", touchAction: "manipulation" }}>🔊 Hear praise again</button>
-      <button onClick={() => { AudioEngine.celebrate(); onNext(); }} style={{ background: ag.color, color: "#fff", border: "none", borderRadius: isMobile ? 14 : 16, padding: isMobile ? "14px" : "16px", fontSize: isTiny ? 14 : (isMobile ? 15 : 16), fontWeight: 800, cursor: "pointer", width: "100%", boxShadow: `0 4px 20px ${ag.color}50`, touchAction: "manipulation" }}>Next Exercise →</button>
+    <div style={{ textAlign: "center", padding: "32px 20px" }}>
+      <div style={{ fontSize: 72, marginBottom: 12 }}>🎉</div>
+      <div style={{ fontSize: 24, fontWeight: 900, color: ag.color, marginBottom: 10 }}>{exercise.praise}</div>
+      <div style={{ fontSize: 14, color: "#6B7280", marginBottom: 24, lineHeight: 1.6 }}>{exercise.hint}</div>
+      <button onClick={() => { if (!muted) Speech.speak(exercise.praise, ag.speechRate, ag.speechPitch); }} style={{ background: ag.light, border: "none", borderRadius: 12, padding: "10px 20px", fontSize: 13, fontWeight: 700, color: ag.color, cursor: "pointer", marginBottom: 12 }}>🔊 Hear praise again</button>
+      <button onClick={() => { AudioEngine.celebrate(); onNext(); }} style={{ background: ag.color, color: "#fff", border: "none", borderRadius: 16, padding: "16px", fontSize: 16, fontWeight: 800, cursor: "pointer", width: "100%", boxShadow: `0 4px 20px ${ag.color}50` }}>Next Exercise →</button>
     </div>
   );
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: isMobile ? 8 : 10 }}>
-        <button onClick={() => { setMuted(m => !m); Speech.stop(); }} style={{ background: muted ? "#FEE2E2" : "#F0FDF4", border: "none", borderRadius: 10, padding: "6px 12px", fontSize: isMobile ? 11 : 12, fontWeight: 700, color: muted ? "#DC2626" : "#059669", cursor: "pointer", touchAction: "manipulation" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 10 }}>
+        <button onClick={() => { setMuted(m => !m); Speech.stop(); }} style={{ background: muted ? "#FEE2E2" : "#F0FDF4", border: "none", borderRadius: 10, padding: "6px 14px", fontSize: 12, fontWeight: 700, color: muted ? "#DC2626" : "#059669", cursor: "pointer" }}>
           {muted ? "🔇 Sound off" : "🔊 Sound on"}
         </button>
       </div>
-      <div style={{ background: ag.light, borderRadius: isMobile ? 14 : 20, padding: isMobile ? "14px 14px" : "20px 24px", marginBottom: isMobile ? 14 : 20 }}>
-        <div style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: ag.color, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: isMobile ? 4 : 6 }}>🎯 Target: {exercise.targetSound}</div>
-        <div style={{ fontSize: isTiny ? 16 : (isMobile ? 18 : 21), fontWeight: 900, color: "#111827", marginBottom: isMobile ? 6 : 8 }}>{exercise.title}</div>
-        <div style={{ fontSize: isTiny ? 12 : (isMobile ? 13 : 14), color: "#374151", lineHeight: isMobile ? 1.5 : 1.65, marginBottom: isMobile ? 6 : 10 }}>{exercise.instruction}</div>
-        <button onClick={() => speak(exercise.instruction)} style={{ background: "rgba(255,255,255,0.7)", border: "none", borderRadius: 8, padding: "4px 10px", fontSize: isMobile ? 11 : 12, fontWeight: 700, color: ag.color, cursor: "pointer", touchAction: "manipulation" }}>🔊 Repeat instruction</button>
+      <div style={{ background: ag.light, borderRadius: 20, padding: "20px 24px", marginBottom: 20 }}>
+        <div style={{ fontSize: 12, fontWeight: 700, color: ag.color, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>🎯 Target: {exercise.targetSound}</div>
+        <div style={{ fontSize: 21, fontWeight: 900, color: "#111827", marginBottom: 8 }}>{exercise.title}</div>
+        <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.65, marginBottom: 10 }}>{exercise.instruction}</div>
+        <button onClick={() => speak(exercise.instruction)} style={{ background: "rgba(255,255,255,0.7)", border: "none", borderRadius: 8, padding: "5px 12px", fontSize: 12, fontWeight: 700, color: ag.color, cursor: "pointer" }}>🔊 Repeat instruction</button>
       </div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: isMobile ? 6 : 8 }}>
-        <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: "#6B7280" }}>STEP {step + 1} OF {steps.length}</span>
-        <span style={{ fontSize: isMobile ? 10 : 12, color: "#9CA3AF" }}>{Math.round(((step + 1) / steps.length) * 100)}% done</span>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: "#6B7280" }}>STEP {step + 1} OF {steps.length}</span>
+        <span style={{ fontSize: 12, color: "#9CA3AF" }}>{Math.round(((step + 1) / steps.length) * 100)}% done</span>
       </div>
-      <div style={{ display: "flex", gap: isMobile ? 3 : 5, marginBottom: isMobile ? 10 : 14 }}>
-        {steps.map((_, i) => (<div key={i} style={{ flex: 1, height: isMobile ? 5 : 6, borderRadius: 999, background: i <= step ? ag.color : "#E5E7EB", transition: "background 0.3s" }} />))}
+      <div style={{ display: "flex", gap: 5, marginBottom: 14 }}>
+        {steps.map((_, i) => (<div key={i} style={{ flex: 1, height: 6, borderRadius: 999, background: i <= step ? ag.color : "#E5E7EB", transition: "background 0.3s" }} />))}
       </div>
-      <div style={{ background: "#fff", border: `2px solid ${ag.color}25`, borderRadius: isMobile ? 14 : 16, padding: isMobile ? "14px 14px" : "20px 24px", display: "flex", alignItems: "center", gap: isMobile ? 8 : 12, boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: isMobile ? 12 : 16 }}>
-        <div style={{ fontSize: isTiny ? 13 : (isMobile ? 14 : 15), color: "#111827", lineHeight: isMobile ? 1.5 : 1.7, fontWeight: 600, flex: 1 }}>{steps[step]}</div>
-        <button onClick={() => speak(steps[step])} style={{ background: ag.light, border: "none", borderRadius: 10, width: isMobile ? 36 : 40, height: isMobile ? 36 : 40, fontSize: isMobile ? 16 : 18, cursor: "pointer", flexShrink: 0, touchAction: "manipulation" }}>🔊</button>
+      <div style={{ background: "#fff", border: `2px solid ${ag.color}25`, borderRadius: 16, padding: "20px 24px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 2px 12px rgba(0,0,0,0.06)", marginBottom: 16 }}>
+        <div style={{ fontSize: 15, color: "#111827", lineHeight: 1.7, fontWeight: 600, flex: 1 }}>{steps[step]}</div>
+        <button onClick={() => speak(steps[step])} style={{ background: ag.light, border: "none", borderRadius: 10, width: 40, height: 40, fontSize: 18, cursor: "pointer", flexShrink: 0 }}>🔊</button>
       </div>
-      {exercise.practiceWords && exercise.practiceWords.length > 0 && (<WordPractice words={exercise.practiceWords} ag={ag} muted={muted} viewport={viewport} />)}
+      {exercise.practiceWords && exercise.practiceWords.length > 0 && (<WordPractice words={exercise.practiceWords} ag={ag} muted={muted} />)}
       {exercise.hint && (
-        <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: isMobile ? 10 : 12, padding: isMobile ? "10px 12px" : "12px 16px", marginBottom: isMobile ? 12 : 16, fontSize: isTiny ? 11 : (isMobile ? 12 : 13), color: "#92400E", display: "flex", gap: isMobile ? 6 : 10 }}>
-          <span style={{ fontSize: isMobile ? 14 : 18, flexShrink: 0 }}>💡</span><span><strong>Tip:</strong> {exercise.hint}</span>
+        <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 12, padding: "12px 16px", marginBottom: 16, fontSize: 13, color: "#92400E", display: "flex", gap: 10 }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>💡</span><span><strong>Tip:</strong> {exercise.hint}</span>
         </div>
       )}
-      <button onClick={handleNext} style={{ width: "100%", background: ag.color, color: "#fff", border: "none", borderRadius: isMobile ? 14 : 16, padding: isMobile ? "14px" : "18px", fontSize: isTiny ? 14 : (isMobile ? 15 : 17), fontWeight: 800, cursor: "pointer", boxShadow: `0 4px 20px ${ag.color}40`, touchAction: "manipulation" }}>
+      <button onClick={handleNext} style={{ width: "100%", background: ag.color, color: "#fff", border: "none", borderRadius: 16, padding: "18px", fontSize: 17, fontWeight: 800, cursor: "pointer", boxShadow: `0 4px 20px ${ag.color}40` }}>
         {isLast ? "🎉 Complete!" : "Next Step →"}
       </button>
     </div>
@@ -371,283 +288,86 @@ export default function SpeaklyApp() {
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [sessionCount, setSessionCount] = useState(0);
   const [streakDay] = useState(3);
-  
-  const viewport = useViewport();
-  const { isMobile, isTiny } = viewport;
-
   const ag = AGE_GROUPS.find(a => a.id === selectedAge);
+  const startSession = (ageId, typeId) => { AudioEngine.click(); setSelectedAge(ageId); setSelectedType(typeId); setExerciseIndex(0); setSessionCount(s => s + 1); setScreen("exercise"); };
+  const nextExercise = () => { setExerciseIndex(i => i + 1); setSessionCount(s => s + 1); };
 
-  const startSession = (ageId, typeId) => { 
-    AudioEngine.click(); 
-    setSelectedAge(ageId); 
-    setSelectedType(typeId); 
-    setExerciseIndex(0); 
-    setSessionCount(s => s + 1); 
-    setScreen("exercise"); 
-  };
-  
-  const nextExercise = () => { 
-    setExerciseIndex(i => i + 1); 
-    setSessionCount(s => s + 1); 
-  };
-
-  const pageStyle = {
-    fontFamily: "'Nunito', sans-serif",
-    minHeight: "100vh",
-    background: "linear-gradient(160deg,#F5F3FF 0%,#ECFDF5 50%,#FEF3C7 100%)",
-    display: "flex",
-    flexDirection: "column"
-  };
-
-  const pageStyleWhite = {
-    fontFamily: "'Nunito', sans-serif",
-    minHeight: "100vh",
-    background: "#F9FAFB",
-    display: "flex",
-    flexDirection: "column"
-  };
-
-  // Home Page
   if (screen === "home") return (
-    <div style={pageStyle}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
-        * { -webkit-tap-highlight-color: transparent; }
-        button { touch-action: manipulation; }
-        html, body { margin: 0; padding: 0; min-height: 100vh; }
-        #root { min-height: 100vh; }
-      `}</style>
-      <div style={{ 
-        background: "#fff", 
-        padding: isMobile ? "12px 16px 10px" : "20px 24px 16px", 
-        display: "flex", 
-        alignItems: "center", 
-        justifyContent: "space-between", 
-        boxShadow: "0 1px 8px rgba(0,0,0,0.06)",
-        flexShrink: 0
-      }}>
-        <div>
-          <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 900, color: "#1F2937" }}>Speakly 🗣️</div>
-          <div style={{ fontSize: isMobile ? 10 : 12, color: "#9CA3AF", fontWeight: 600 }}>Your speech therapy companion</div>
-        </div>
-        <div style={{ textAlign: "right" }}>
-          <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 900, color: "#F59E0B" }}>🔥 {streakDay}</div>
-          <div style={{ fontSize: isMobile ? 9 : 11, color: "#9CA3AF", fontWeight: 600 }}>day streak</div>
-        </div>
+    <div style={{ fontFamily: "'Nunito', sans-serif", minHeight: "100vh", background: "linear-gradient(160deg,#F5F3FF 0%,#ECFDF5 50%,#FEF3C7 100%)" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');`}</style>
+      <div style={{ background: "#fff", padding: "20px 24px 16px", display: "flex", alignItems: "center", justifyContent: "space-between", boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
+        <div><div style={{ fontSize: 24, fontWeight: 900, color: "#1F2937" }}>Speakly 🗣️</div><div style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 600 }}>Your speech therapy companion</div></div>
+        <div style={{ textAlign: "right" }}><div style={{ fontSize: 22, fontWeight: 900, color: "#F59E0B" }}>🔥 {streakDay}</div><div style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600 }}>day streak</div></div>
       </div>
-      <div style={{ 
-        padding: isMobile ? "16px" : "24px 20px", 
-        flex: 1,
-        display: "flex",
-        flexDirection: "column"
-      }}>
-        <div style={{ 
-          background: "linear-gradient(135deg,#7C3AED,#4F46E5)", 
-          borderRadius: isMobile ? 20 : 24, 
-          padding: isMobile ? "16px 18px" : "22px 24px", 
-          color: "#fff", 
-          marginBottom: isMobile ? 16 : 28,
-          boxShadow: "0 8px 32px rgba(124,58,237,0.3)",
-          flexShrink: 0
-        }}>
-          <div style={{ fontSize: isMobile ? 11 : 13, opacity: 0.85, fontWeight: 600, marginBottom: 4 }}>Total sessions completed</div>
-          <div style={{ fontSize: isMobile ? 36 : 44, fontWeight: 900, lineHeight: 1 }}>{sessionCount}</div>
-          <div style={{ fontSize: isMobile ? 12 : 13, opacity: 0.8, marginTop: 8, fontWeight: 600 }}>{sessionCount === 0 ? "Let's start your first session today! 🚀" : "Every session builds stronger speech! 💪"}</div>
+      <div style={{ padding: "24px 20px" }}>
+        <div style={{ background: "linear-gradient(135deg,#7C3AED,#4F46E5)", borderRadius: 24, padding: "22px 24px", color: "#fff", marginBottom: 28, boxShadow: "0 8px 32px rgba(124,58,237,0.3)" }}>
+          <div style={{ fontSize: 13, opacity: 0.85, fontWeight: 600, marginBottom: 4 }}>Total sessions completed</div>
+          <div style={{ fontSize: 44, fontWeight: 900, lineHeight: 1 }}>{sessionCount}</div>
+          <div style={{ fontSize: 13, opacity: 0.8, marginTop: 8, fontWeight: 600 }}>{sessionCount === 0 ? "Let's start your first session today! 🚀" : "Every session builds stronger speech! 💪"}</div>
         </div>
-        <div style={{ 
-          fontSize: isMobile ? 16 : 17, 
-          fontWeight: 900, 
-          color: "#1F2937", 
-          marginBottom: isMobile ? 10 : 16,
-          flexShrink: 0
-        }}>Who is practising today?</div>
-        <div style={{ 
-          display: "grid", 
-          gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr", 
-          gap: isMobile ? 10 : 14, 
-          marginBottom: isMobile ? 16 : 28,
-          flex: 1
-        }}>
+        <div style={{ fontSize: 17, fontWeight: 900, color: "#1F2937", marginBottom: 16 }}>Who is practising today?</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 28 }}>
           {AGE_GROUPS.map(g => (
-            <div key={g.id} onClick={() => { AudioEngine.click(); setSelectedAge(g.id); setScreen("type-select"); }} style={{ 
-              background: "#fff", 
-              borderRadius: isMobile ? 16 : 20, 
-              padding: isMobile ? "14px 10px" : "20px 16px", 
-              cursor: "pointer", 
-              border: `2px solid ${g.light}`, 
-              boxShadow: "0 2px 12px rgba(0,0,0,0.06)", 
-              transition: "all 0.2s", 
-              textAlign: "center",
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "center",
-              alignItems: "center",
-              minHeight: isMobile ? "80px" : "100px",
-              touchAction: "manipulation"
-            }}>
-              <div style={{ fontSize: isMobile ? 28 : 36, marginBottom: 4 }}>{g.mascot}</div>
-              <div style={{ fontSize: isMobile ? 12 : 14, fontWeight: 900, color: g.color }}>{g.label}</div>
-              <div style={{ fontSize: isMobile ? 9 : 11, color: "#9CA3AF", marginTop: 2, fontWeight: 600 }}>{g.description}</div>
+            <div key={g.id} onClick={() => { AudioEngine.click(); setSelectedAge(g.id); setScreen("type-select"); }} style={{ background: "#fff", borderRadius: 20, padding: "20px 16px", cursor: "pointer", border: `2px solid ${g.light}`, boxShadow: "0 2px 12px rgba(0,0,0,0.06)", transition: "all 0.2s", textAlign: "center" }} onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-3px)"; e.currentTarget.style.boxShadow = `0 8px 24px ${g.color}25`; }} onMouseLeave={e => { e.currentTarget.style.transform = "translateY(0)"; e.currentTarget.style.boxShadow = "0 2px 12px rgba(0,0,0,0.06)"; }}>
+              <div style={{ fontSize: 36, marginBottom: 8 }}>{g.mascot}</div>
+              <div style={{ fontSize: 14, fontWeight: 900, color: g.color }}>{g.label}</div>
+              <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 3, fontWeight: 600 }}>{g.description}</div>
             </div>
           ))}
         </div>
-        <div style={{ 
-          background: "linear-gradient(135deg,#EDE9FE,#D1FAE5)", 
-          borderRadius: isMobile ? 16 : 20, 
-          padding: isMobile ? "14px 16px" : "18px 20px",
-          flexShrink: 0
-        }}>
-          <div style={{ fontSize: isMobile ? 13 : 14, fontWeight: 800, color: "#1F2937", marginBottom: 4 }}>🔊 How Speakly teaches</div>
-          <div style={{ fontSize: isMobile ? 12 : 13, color: "#374151", lineHeight: 1.6 }}>Every exercise reads instructions aloud. Tap any practice word to hear it spoken clearly — then tap 🐢 Slow to hear it at half speed. Say it back yourself — listen, see, speak!</div>
+        <div style={{ background: "linear-gradient(135deg,#EDE9FE,#D1FAE5)", borderRadius: 20, padding: "18px 20px" }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: "#1F2937", marginBottom: 6 }}>🔊 How Speakly teaches</div>
+          <div style={{ fontSize: 13, color: "#374151", lineHeight: 1.7 }}>Every exercise reads instructions aloud. Tap any practice word to hear it spoken clearly — then tap 🐢 Slow to hear it at half speed. Say it back yourself — listen, see, speak!</div>
         </div>
       </div>
     </div>
   );
 
-  // Type Select Page
-  if (screen === "type-select") {
-    return (
-      <div style={pageStyleWhite}>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
-          * { -webkit-tap-highlight-color: transparent; }
-          button { touch-action: manipulation; }
-          html, body { margin: 0; padding: 0; min-height: 100vh; }
-          #root { min-height: 100vh; }
-        `}</style>
-        <div style={{ 
-          background: ag.color, 
-          padding: isMobile ? "16px 16px 20px" : "24px 20px 32px", 
-          boxShadow: `0 4px 20px ${ag.color}50`,
-          flexShrink: 0
-        }}>
-          <button onClick={() => { AudioEngine.click(); setScreen("home"); }} style={{ 
-            background: "rgba(255,255,255,0.2)", 
-            border: "none", 
-            borderRadius: 10, 
-            padding: "6px 14px", 
-            color: "#fff", 
-            fontSize: isMobile ? 12 : 13, 
-            fontWeight: 800, 
-            cursor: "pointer", 
-            marginBottom: isMobile ? 10 : 18,
-            touchAction: "manipulation"
-          }}>← Back</button>
-          <div style={{ fontSize: isMobile ? 36 : 44 }}>{ag.mascot}</div>
-          <div style={{ fontSize: isMobile ? 20 : 24, fontWeight: 900, color: "#fff", marginTop: 4 }}>{ag.label}</div>
-          <div style={{ fontSize: isMobile ? 12 : 14, color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>{ag.description} · Choose your practice type</div>
-        </div>
-        <div style={{ 
-          padding: isMobile ? "16px" : "24px 20px", 
-          flex: 1,
-          display: "flex",
-          flexDirection: "column"
-        }}>
-          <div style={{ fontSize: isMobile ? 15 : 16, fontWeight: 900, color: "#1F2937", marginBottom: isMobile ? 10 : 16, flexShrink: 0 }}>What would you like to practise?</div>
-          <div style={{ flex: 1 }}>
-            {THERAPY_TYPES.map(t => {
-              const pool = EXERCISES[ag.id]?.[t.id] || [];
-              return (
-                <div key={t.id} onClick={() => startSession(ag.id, t.id)} style={{ 
-                  background: "#fff", 
-                  borderRadius: isMobile ? 14 : 18, 
-                  padding: isMobile ? "14px 16px" : "18px 20px", 
-                  marginBottom: isMobile ? 8 : 12, 
-                  cursor: "pointer", 
-                  display: "flex", 
-                  alignItems: "center", 
-                  gap: isMobile ? 12 : 16, 
-                  border: "2px solid transparent", 
-                  boxShadow: "0 2px 10px rgba(0,0,0,0.05)", 
-                  transition: "all 0.18s",
-                  touchAction: "manipulation"
-                }}>
-                  <div style={{ fontSize: isMobile ? 28 : 34, width: isMobile ? 40 : 50, textAlign: "center", flexShrink: 0 }}>{t.icon}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: isMobile ? 14 : 16, fontWeight: 900, color: "#1F2937" }}>{t.label}</div>
-                    <div style={{ fontSize: isMobile ? 10 : 12, color: "#9CA3AF", marginTop: 2, fontWeight: 600, wordBreak: "break-word" }}>{t.desc} · {pool.length} exercises</div>
-                  </div>
-                  <div style={{ fontSize: isMobile ? 18 : 22, color: "#D1D5DB", fontWeight: 900, flexShrink: 0 }}>→</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+  if (screen === "type-select") return (
+    <div style={{ fontFamily: "'Nunito', sans-serif", minHeight: "100vh", background: "#F9FAFB" }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');`}</style>
+      <div style={{ background: ag.color, padding: "24px 20px 32px", boxShadow: `0 4px 20px ${ag.color}50` }}>
+        <button onClick={() => { AudioEngine.click(); setScreen("home"); }} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 10, padding: "7px 16px", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer", marginBottom: 18 }}>← Back</button>
+        <div style={{ fontSize: 44 }}>{ag.mascot}</div>
+        <div style={{ fontSize: 24, fontWeight: 900, color: "#fff", marginTop: 8 }}>{ag.label}</div>
+        <div style={{ fontSize: 14, color: "rgba(255,255,255,0.85)", fontWeight: 600 }}>{ag.description} · Choose your practice type</div>
       </div>
-    );
-  }
+      <div style={{ padding: "24px 20px" }}>
+        <div style={{ fontSize: 16, fontWeight: 900, color: "#1F2937", marginBottom: 16 }}>What would you like to practise?</div>
+        {THERAPY_TYPES.map(t => {
+          const pool = EXERCISES[ag.id]?.[t.id] || [];
+          return (
+            <div key={t.id} onClick={() => startSession(ag.id, t.id)} style={{ background: "#fff", borderRadius: 18, padding: "18px 20px", marginBottom: 12, cursor: "pointer", display: "flex", alignItems: "center", gap: 16, border: "2px solid transparent", boxShadow: "0 2px 10px rgba(0,0,0,0.05)", transition: "all 0.18s" }} onMouseEnter={e => { e.currentTarget.style.borderColor = ag.color; e.currentTarget.style.transform = "translateX(5px)"; }} onMouseLeave={e => { e.currentTarget.style.borderColor = "transparent"; e.currentTarget.style.transform = "translateX(0)"; }}>
+              <div style={{ fontSize: 34, width: 50, textAlign: "center" }}>{t.icon}</div>
+              <div style={{ flex: 1 }}><div style={{ fontSize: 16, fontWeight: 900, color: "#1F2937" }}>{t.label}</div><div style={{ fontSize: 12, color: "#9CA3AF", marginTop: 2, fontWeight: 600 }}>{t.desc} · {pool.length} exercises</div></div>
+              <div style={{ fontSize: 22, color: "#D1D5DB", fontWeight: 900 }}>→</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 
-  // Exercise Page
   if (screen === "exercise") {
     const exercise = getExercise(selectedAge, selectedType, exerciseIndex);
     return (
-      <div style={pageStyleWhite}>
-        <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');
-          * { -webkit-tap-highlight-color: transparent; }
-          button { touch-action: manipulation; }
-          html, body { margin: 0; padding: 0; min-height: 100vh; }
-          #root { min-height: 100vh; }
-        `}</style>
-        <div style={{ 
-          background: ag.color, 
-          padding: isMobile ? "12px 16px 16px" : "20px 20px 28px",
-          flexShrink: 0
-        }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: isMobile ? 8 : 14 }}>
-            <button onClick={() => { AudioEngine.click(); Speech.stop(); setScreen("type-select"); }} style={{ 
-              background: "rgba(255,255,255,0.2)", 
-              border: "none", 
-              borderRadius: 10, 
-              padding: "6px 14px", 
-              color: "#fff", 
-              fontSize: isMobile ? 11 : 13, 
-              fontWeight: 800, 
-              cursor: "pointer",
-              touchAction: "manipulation"
-            }}>← Back</button>
-            <div style={{ fontSize: isMobile ? 11 : 13, color: "rgba(255,255,255,0.85)", fontWeight: 700 }}>Session #{sessionCount}</div>
+      <div style={{ fontFamily: "'Nunito', sans-serif", minHeight: "100vh", background: "#F9FAFB" }}>
+        <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap');`}</style>
+        <div style={{ background: ag.color, padding: "20px 20px 28px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+            <button onClick={() => { AudioEngine.click(); Speech.stop(); setScreen("type-select"); }} style={{ background: "rgba(255,255,255,0.2)", border: "none", borderRadius: 10, padding: "7px 16px", color: "#fff", fontSize: 13, fontWeight: 800, cursor: "pointer" }}>← Back</button>
+            <div style={{ fontSize: 13, color: "rgba(255,255,255,0.85)", fontWeight: 700 }}>Session #{sessionCount}</div>
           </div>
           <div style={{ textAlign: "center" }}>
-            <div style={{ fontSize: isMobile ? 36 : 44 }}>{ag.mascot}</div>
-            <div style={{ fontSize: isMobile ? 14 : 16, fontWeight: 900, color: "#fff", marginTop: 4 }}>{ag.label} · {THERAPY_TYPES.find(t => t.id === selectedType)?.label}</div>
+            <div style={{ fontSize: 44 }}>{ag.mascot}</div>
+            <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", marginTop: 6 }}>{ag.label} · {THERAPY_TYPES.find(t => t.id === selectedType)?.label}</div>
           </div>
         </div>
-        <div style={{ 
-          padding: isMobile ? "12px 16px" : "24px 20px",
-          flex: 1,
-          overflowY: "auto",
-          paddingBottom: isMobile ? 20 : 24
-        }}>
-          <ExerciseCard 
-            key={`${selectedAge}-${selectedType}-${exerciseIndex}`} 
-            exercise={exercise} 
-            ageGroup={selectedAge} 
-            onNext={nextExercise}
-            viewport={viewport}
-          />
-          <div style={{ marginTop: isMobile ? 10 : 14, display: "flex", gap: isMobile ? 6 : 10 }}>
-            <button onClick={() => { AudioEngine.click(); Speech.stop(); nextExercise(); }} style={{ 
-              flex: 1, 
-              background: "#F3F4F6", 
-              border: "none", 
-              borderRadius: isMobile ? 12 : 14, 
-              padding: isMobile ? "10px" : "13px", 
-              fontSize: isMobile ? 12 : 13, 
-              fontWeight: 800, 
-              color: "#6B7280", 
-              cursor: "pointer",
-              touchAction: "manipulation"
-            }}>🔄 Skip</button>
-            <button onClick={() => { AudioEngine.click(); Speech.stop(); setScreen("home"); }} style={{ 
-              flex: 1, 
-              background: "#F3F4F6", 
-              border: "none", 
-              borderRadius: isMobile ? 12 : 14, 
-              padding: isMobile ? "10px" : "13px", 
-              fontSize: isMobile ? 12 : 13, 
-              fontWeight: 800, 
-              color: "#6B7280", 
-              cursor: "pointer",
-              touchAction: "manipulation"
-            }}>🏠 Home</button>
+        <div style={{ padding: "24px 20px" }}>
+          <ExerciseCard key={`${selectedAge}-${selectedType}-${exerciseIndex}`} exercise={exercise} ageGroup={selectedAge} onNext={nextExercise} />
+          <div style={{ marginTop: 16, display: "flex", gap: 10 }}>
+            <button onClick={() => { AudioEngine.click(); Speech.stop(); nextExercise(); }} style={{ flex: 1, background: "#F3F4F6", border: "none", borderRadius: 14, padding: "13px", fontSize: 13, fontWeight: 800, color: "#6B7280", cursor: "pointer" }}>🔄 Skip</button>
+            <button onClick={() => { AudioEngine.click(); Speech.stop(); setScreen("home"); }} style={{ flex: 1, background: "#F3F4F6", border: "none", borderRadius: 14, padding: "13px", fontSize: 13, fontWeight: 800, color: "#6B7280", cursor: "pointer" }}>🏠 Home</button>
           </div>
         </div>
       </div>
