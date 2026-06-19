@@ -1,5 +1,33 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 
+// ===== HOOK: useViewport =====
+function useViewport() {
+  const [viewport, setViewport] = useState({
+    isMobile: false,
+    isTiny: false,
+    width: typeof window !== 'undefined' ? window.innerWidth : 1024,
+  });
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setViewport({
+        width,
+        isMobile: width < 640,
+        isTiny: width < 380,
+      });
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return viewport;
+}
+
 const AudioEngine = {
   ctx: null,
   getCtx() {
@@ -154,11 +182,12 @@ function getExercise(ageId, typeId, index) {
   return pool[index % pool.length];
 }
 
-function WordPractice({ words, ag, muted }) {
+function WordPractice({ words, ag, muted, viewport }) {
   const [activeWord, setActiveWord] = useState(null);
   const [highlightIndex, setHighlightIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const timerRef = useRef(null);
+  const { isMobile, isTiny } = viewport;
 
   const speakWord = useCallback((word, rate = 0.85) => {
     if (muted) return;
@@ -181,10 +210,6 @@ function WordPractice({ words, ag, muted }) {
   const handleWordTap = (word) => { AudioEngine.click(); setActiveWord(word); speakWord(word, 0.85); };
   const handleSlow = () => { if (!activeWord) return; AudioEngine.click(); speakWord(activeWord, 0.5); };
   const handleNormal = () => { if (!activeWord) return; AudioEngine.click(); speakWord(activeWord, 0.85); };
-
-  // Responsive styles
-  const isMobile = window.innerWidth < 640;
-  const isTiny = window.innerWidth < 380;
 
   return (
     <div style={{ marginBottom: isMobile ? 16 : 20 }}>
@@ -272,15 +297,14 @@ function WordPractice({ words, ag, muted }) {
   );
 }
 
-function ExerciseCard({ exercise, ageGroup, onNext }) {
+function ExerciseCard({ exercise, ageGroup, onNext, viewport }) {
   const [step, setStep] = useState(0);
   const [done, setDone] = useState(false);
   const [muted, setMuted] = useState(false);
   const ag = AGE_GROUPS.find(a => a.id === ageGroup);
   const steps = exercise.steps || [];
   const isLast = step >= steps.length - 1;
-  const isMobile = window.innerWidth < 640;
-  const isTiny = window.innerWidth < 380;
+  const { isMobile, isTiny } = viewport;
 
   const speak = useCallback((text, rate, onEnd) => {
     if (!muted) Speech.speak(text, rate || ag.speechRate, ag.speechPitch, onEnd);
@@ -298,7 +322,7 @@ function ExerciseCard({ exercise, ageGroup, onNext }) {
       <div style={{ fontSize: isMobile ? 48 : 72, marginBottom: isMobile ? 10 : 12 }}>🎉</div>
       <div style={{ fontSize: isTiny ? 18 : (isMobile ? 20 : 24), fontWeight: 900, color: ag.color, marginBottom: isMobile ? 8 : 10 }}>{exercise.praise}</div>
       <div style={{ fontSize: isMobile ? 13 : 14, color: "#6B7280", marginBottom: isMobile ? 16 : 24, lineHeight: 1.6 }}>{exercise.hint}</div>
-      <button onClick={() => { if (!muted) Speech.speak(exercise.praise, ag.speechRate, ag.speechPitch); }} style={{ background: ag.light, border: "none", borderRadius: 12, padding: isMobile ? "8px 16px" : "10px 20px", fontSize: isMobile ? 12 : 13, fontWeight: 700, color: ag.color, cursor: "pointer", marginBottom: isMobile ? 10 : 12, width: "100%" }}>🔊 Hear praise again</button>
+      <button onClick={() => { if (!muted) Speech.speak(exercise.praise, ag.speechRate, ag.speechPitch); }} style={{ background: ag.light, border: "none", borderRadius: 12, padding: isMobile ? "8px 16px" : "10px 20px", fontSize: isMobile ? 12 : 13, fontWeight: 700, color: ag.color, cursor: "pointer", marginBottom: isMobile ? 10 : 12, width: "100%", touchAction: "manipulation" }}>🔊 Hear praise again</button>
       <button onClick={() => { AudioEngine.celebrate(); onNext(); }} style={{ background: ag.color, color: "#fff", border: "none", borderRadius: isMobile ? 14 : 16, padding: isMobile ? "14px" : "16px", fontSize: isTiny ? 14 : (isMobile ? 15 : 16), fontWeight: 800, cursor: "pointer", width: "100%", boxShadow: `0 4px 20px ${ag.color}50`, touchAction: "manipulation" }}>Next Exercise →</button>
     </div>
   );
@@ -327,7 +351,7 @@ function ExerciseCard({ exercise, ageGroup, onNext }) {
         <div style={{ fontSize: isTiny ? 13 : (isMobile ? 14 : 15), color: "#111827", lineHeight: isMobile ? 1.5 : 1.7, fontWeight: 600, flex: 1 }}>{steps[step]}</div>
         <button onClick={() => speak(steps[step])} style={{ background: ag.light, border: "none", borderRadius: 10, width: isMobile ? 36 : 40, height: isMobile ? 36 : 40, fontSize: isMobile ? 16 : 18, cursor: "pointer", flexShrink: 0, touchAction: "manipulation" }}>🔊</button>
       </div>
-      {exercise.practiceWords && exercise.practiceWords.length > 0 && (<WordPractice words={exercise.practiceWords} ag={ag} muted={muted} />)}
+      {exercise.practiceWords && exercise.practiceWords.length > 0 && (<WordPractice words={exercise.practiceWords} ag={ag} muted={muted} viewport={viewport} />)}
       {exercise.hint && (
         <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: isMobile ? 10 : 12, padding: isMobile ? "10px 12px" : "12px 16px", marginBottom: isMobile ? 12 : 16, fontSize: isTiny ? 11 : (isMobile ? 12 : 13), color: "#92400E", display: "flex", gap: isMobile ? 6 : 10 }}>
           <span style={{ fontSize: isMobile ? 14 : 18, flexShrink: 0 }}>💡</span><span><strong>Tip:</strong> {exercise.hint}</span>
@@ -347,12 +371,11 @@ export default function SpeaklyApp() {
   const [exerciseIndex, setExerciseIndex] = useState(0);
   const [sessionCount, setSessionCount] = useState(0);
   const [streakDay] = useState(3);
+  
+  const viewport = useViewport();
+  const { isMobile, isTiny } = viewport;
 
   const ag = AGE_GROUPS.find(a => a.id === selectedAge);
-  
-  // Responsive helper
-  const isMobile = typeof window !== 'undefined' && window.innerWidth < 640;
-  const isTiny = typeof window !== 'undefined' && window.innerWidth < 380;
 
   const startSession = (ageId, typeId) => { 
     AudioEngine.click(); 
@@ -368,7 +391,6 @@ export default function SpeaklyApp() {
     setSessionCount(s => s + 1); 
   };
 
-  // Style for all pages - full viewport height
   const pageStyle = {
     fontFamily: "'Nunito', sans-serif",
     minHeight: "100vh",
@@ -594,7 +616,13 @@ export default function SpeaklyApp() {
           overflowY: "auto",
           paddingBottom: isMobile ? 20 : 24
         }}>
-          <ExerciseCard key={`${selectedAge}-${selectedType}-${exerciseIndex}`} exercise={exercise} ageGroup={selectedAge} onNext={nextExercise} />
+          <ExerciseCard 
+            key={`${selectedAge}-${selectedType}-${exerciseIndex}`} 
+            exercise={exercise} 
+            ageGroup={selectedAge} 
+            onNext={nextExercise}
+            viewport={viewport}
+          />
           <div style={{ marginTop: isMobile ? 10 : 14, display: "flex", gap: isMobile ? 6 : 10 }}>
             <button onClick={() => { AudioEngine.click(); Speech.stop(); nextExercise(); }} style={{ 
               flex: 1, 
